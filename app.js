@@ -1,63 +1,95 @@
-// Get elements by their IDs
 const display = document.querySelector(".display");
-const buttons = document.querySelector(".buttons");
-const clearAllButton = document.getElementById("clearAll");
-const clearOneButton = document.getElementById("clearOne");
-const equalButton = document.getElementById("equal");
+const buttons = document.querySelectorAll(".buttons button");
+let currentDisplay = "0";
+let operator = null;
+let waitingForSecondOperand = false;
+let previousResult = null;
 
-// Add event listeners to the buttons
-buttons.addEventListener("click", handleButtonClick);
-
-// Function to handle button clicks
-function handleButtonClick(event) {
-  const button = event.target;
-  const buttonText = button.textContent;
-
-  // Check which button was clicked
-  switch (buttonText) {
-    case "AC":
-      clearDisplay();
-      break;
-    case "C":
-      clearOne();
-      break;
-    case "=":
-      calculateResult();
-      break;
-    default:
-      appendToDisplay(buttonText);
-      break;
-  }
+function updateDisplay() {
+  display.textContent = currentDisplay;
 }
 
-// Function to clear the display
-function clearDisplay() {
-  display.textContent = "0";
-}
+updateDisplay();
 
-// Function to remove the last character from the display
-function clearOne() {
-  let currentText = display.textContent;
-  display.textContent = currentText.slice(0, -1);
-}
+buttons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const buttonValue = button.textContent;
 
-// Function to append text to the display
-function appendToDisplay(value) {
-  const currentText = display.textContent;
+    if (button.classList.contains("operand")) {
+      if (currentDisplay === "0" || waitingForSecondOperand) {
+        currentDisplay = buttonValue;
+        waitingForSecondOperand = false;
+      } else {
+        currentDisplay += buttonValue;
+      }
+    }
 
-  if ((currentText === "0" && value !== ".") || currentText === "Error") {
-    display.textContent = value;
-  } else {
-    display.textContent += value;
-  }
-}
+    if (buttonValue === ".") {
+      if (!currentDisplay.includes(".")) {
+        currentDisplay += buttonValue;
+      }
+    }
 
-// Function to calculate the result
-function calculateResult() {
-  try {
-    const result = eval(display.textContent.replace(/x/g, "*")); // Replace 'x' with '*'
-    display.textContent = result;
-  } catch (error) {
-    display.textContent = "Error";
+    if (button.classList.contains("operator")) {
+      if (operator !== null && !waitingForSecondOperand) {
+        calculate();
+      } else {
+        previousResult = parseFloat(currentDisplay);
+      }
+      operator = buttonValue;
+      waitingForSecondOperand = true;
+    }
+
+    if (button.id === "equal") {
+      calculate();
+      operator = null;
+      previousResult = null;
+    }
+
+    if (button.id === "clearAll") {
+      currentDisplay = "0";
+      operator = null;
+      waitingForSecondOperand = false;
+      previousResult = null;
+    }
+
+    if (button.id === "clearOne") {
+      currentDisplay = currentDisplay.slice(0, -1);
+      if (currentDisplay === "") {
+        currentDisplay = "0";
+      }
+    }
+
+    if (button.id === "sign") {
+      currentDisplay = (parseFloat(currentDisplay) * -1).toString();
+    }
+
+    if (button.id === "percentage") {
+      currentDisplay = (parseFloat(currentDisplay) / 100).toString();
+    }
+
+    updateDisplay();
+  });
+});
+
+function calculate() {
+  const firstOperand = previousResult;
+  const secondOperand = parseFloat(currentDisplay);
+  if (!isNaN(firstOperand) && !isNaN(secondOperand) && operator) {
+    switch (operator) {
+      case "+":
+        currentDisplay = (firstOperand + secondOperand).toString();
+        break;
+      case "-":
+        currentDisplay = (firstOperand - secondOperand).toString();
+        break;
+      case "x":
+        currentDisplay = (firstOperand * secondOperand).toString();
+        break;
+      case "/":
+        currentDisplay = (firstOperand / secondOperand).toString();
+        break;
+    }
+    waitingForSecondOperand = false;
   }
 }
